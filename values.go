@@ -30,8 +30,23 @@ func convertSimpleArgument(ci *pgtype.ConnInfo, arg interface{}) (interface{}, e
 	}
 
 	refVal := reflect.ValueOf(arg)
-	if refVal.Kind() == reflect.Ptr && refVal.IsNil() {
+	refKind := refVal.Kind()
+	if refKind == reflect.Ptr && refVal.IsNil() {
 		return nil, nil
+	}
+	if refKind == reflect.Slice {
+		refLen := refVal.Len()
+		out := make([]interface{}, 0, refLen)
+
+		for i := 0; i < refLen; i++ {
+			v, err := convertSimpleArgument(ci, refVal.Index(i))
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, v)
+		}
+
+		return out, nil
 	}
 
 	switch arg := arg.(type) {
